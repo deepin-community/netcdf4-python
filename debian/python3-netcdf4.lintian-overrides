@@ -1,0 +1,9 @@
+# False positive, lat/lon
+spelling-error-in-binary lon long *
+
+# Not documentation
+package-contains-documentation-outside-usr-share-doc [usr/lib/python3/dist-packages/netCDF4/plugins/empty.txt]
+
+# False positive
+package-contains-documentation-outside-usr-share-doc [usr/lib/python3/dist-packages/*.*-info/*.txt]
+

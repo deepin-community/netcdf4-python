@@ -1,20 +1,9 @@
-import os, sys, subprocess
+import os, sys, subprocess, glob
 import os.path as osp
+import shutil
 import configparser
 from setuptools import setup, Extension
-from distutils.dist import Distribution
-
-setuptools_extra_kwargs = {
-    "install_requires": ["numpy>=1.9","cftime"],
-    "setup_requires": ['setuptools>=18.0', "cython>=0.19"],
-    "entry_points": {
-        'console_scripts': [
-            'ncinfo = netCDF4.utils:ncinfo',
-            'nc4tonc3 = netCDF4.utils:nc4tonc3',
-            'nc3tonc4 = netCDF4.utils:nc3tonc4',
-        ]
-    },
-}
+from setuptools.dist import Distribution
 
 open_kwargs = {'encoding': 'utf-8'}
 
@@ -22,7 +11,7 @@ open_kwargs = {'encoding': 'utf-8'}
 def check_hdf5version(hdf5_includedir):
     try:
         f = open(os.path.join(hdf5_includedir, 'H5public.h'), **open_kwargs)
-    except IOError:
+    except OSError:
         return None
     hdf5_version = None
     for line in f:
@@ -46,14 +35,13 @@ def get_hdf5_version(direc):
 def check_ifnetcdf4(netcdf4_includedir):
     try:
         f = open(os.path.join(netcdf4_includedir, 'netcdf.h'), **open_kwargs)
-    except IOError:
+    except OSError:
         return False
     isnetcdf4 = False
     for line in f:
         if line.startswith('nc_inq_compound'):
             isnetcdf4 = True
     return isnetcdf4
-
 
 def check_api(inc_dirs,netcdf_lib_version):
     has_rename_grp = False
@@ -65,14 +53,23 @@ def check_api(inc_dirs,netcdf_lib_version):
     has_parallel_support = False
     has_parallel4_support = False
     has_pnetcdf_support = False
+    has_szip_support = False
+    has_quantize = False
+    has_zstandard = False
+    has_bzip2 = False
+    has_blosc = False
+    has_ncfilter = False
+    has_set_alignment = False
+    has_nc_rc_set = False
 
     for d in inc_dirs:
         try:
             f = open(os.path.join(d, 'netcdf.h'), **open_kwargs)
-        except IOError:
+        except OSError:
             continue
 
         has_nc_open_mem = os.path.exists(os.path.join(d, 'netcdf_mem.h'))
+        has_nc_filter = os.path.exists(os.path.join(d, 'netcdf_filter.h'))
 
         for line in f:
             if line.startswith('nc_rename_grp'):
@@ -83,27 +80,66 @@ def check_api(inc_dirs,netcdf_lib_version):
                 has_nc_inq_format_extended = True
             if line.startswith('#define NC_FORMAT_64BIT_DATA'):
                 has_cdf5_format = True
+            if line.startswith('nc_def_var_quantize'):
+                has_quantize = True
+            if line.startswith('nc_set_alignment'):
+                has_set_alignment = True
+            if line.startswith('EXTERNL int nc_rc_set'):
+                has_nc_rc_set = True
 
         if has_nc_open_mem:
             try:
                 f = open(os.path.join(d, 'netcdf_mem.h'), **open_kwargs)
-            except IOError:
+            except OSError:
                 continue
             for line in f:
                 if line.startswith('EXTERNL int nc_create_mem'):
                     has_nc_create_mem = True
 
+        if has_nc_filter:
+            try:
+                f = open(os.path.join(d, 'netcdf_filter.h'), **open_kwargs)
+            except OSError:
+                continue
+            for line in f:
+                if line.startswith('EXTERNL int nc_def_var_zstandard'):
+                    has_zstandard = True
+                if line.startswith('EXTERNL int nc_def_var_bzip2'):
+                    has_bzip2 = True
+                if line.startswith('EXTERNL int nc_def_var_blosc'):
+                    has_blosc = True
+                if line.startswith('EXTERNL int nc_inq_filter_avail'):
+                    has_ncfilter = True
+
         ncmetapath = os.path.join(d,'netcdf_meta.h')
         if os.path.exists(ncmetapath):
             for line in open(ncmetapath):
                 if line.startswith('#define NC_HAS_CDF5'):
-                    has_cdf5_format = bool(int(line.split()[2]))
+                    try:
+                        has_cdf5_format = bool(int(line.split()[2]))
+                    except ValueError:
+                        pass  # keep default False if value cannot be parsed
                 if line.startswith('#define NC_HAS_PARALLEL'):
-                    has_parallel_support = bool(int(line.split()[2]))
+                    try:
+                        has_parallel_support = bool(int(line.split()[2]))
+                    except ValueError:
+                        pass
                 if line.startswith('#define NC_HAS_PARALLEL4'):
-                    has_parallel4_support = bool(int(line.split()[2]))
+                    try:
+                        has_parallel4_support = bool(int(line.split()[2]))
+                    except ValueError:
+                        pass
                 if line.startswith('#define NC_HAS_PNETCDF'):
-                    has_pnetcdf_support = bool(int(line.split()[2]))
+                    try:
+                        has_pnetcdf_support = bool(int(line.split()[2]))
+                    except ValueError:
+                        pass
+                if line.startswith('#define NC_HAS_SZIP_WRITE'):
+                    try:
+                        has_szip_support = bool(int(line.split()[2]))
+                    except ValueError:
+                        pass
+
         # NC_HAS_PARALLEL4 missing in 4.6.1 (issue #964)
         if not has_parallel4_support and has_parallel_support and not has_pnetcdf_support:
             has_parallel4_support = True
@@ -116,7 +152,9 @@ def check_api(inc_dirs,netcdf_lib_version):
 
     return has_rename_grp, has_nc_inq_path, has_nc_inq_format_extended, \
            has_cdf5_format, has_nc_open_mem, has_nc_create_mem, \
-           has_parallel4_support, has_pnetcdf_support
+           has_parallel4_support, has_pnetcdf_support, has_szip_support, has_quantize, \
+           has_zstandard, has_bzip2, has_blosc, has_set_alignment, has_ncfilter, \
+           has_nc_rc_set
 
 
 def getnetcdfvers(libdirs):
@@ -203,7 +241,7 @@ else:
 
 setup_cfg = 'setup.cfg'
 # contents of setup.cfg will override env vars, unless
-# USE_SETUPCFG evaluates to False. 
+# USE_SETUPCFG evaluates to False.
 ncconfig = None
 use_ncconfig = None
 if USE_SETUPCFG and os.path.exists(setup_cfg):
@@ -313,7 +351,7 @@ if USE_NCCONFIG is None and use_ncconfig is not None:
 elif USE_NCCONFIG is None:
     # if nc-config exists, and USE_NCCONFIG not set, try to use it.
     if HAS_NCCONFIG: USE_NCCONFIG=True
-#elif USE_NCCONFIG is None: 
+#elif USE_NCCONFIG is None:
 #    USE_NCCONFIG = False # don't try to use nc-config if USE_NCCONFIG not set
 
 try:
@@ -382,7 +420,7 @@ if os.environ.get("CONDA_PREFIX"):
     dirstosearch.append(os.environ["CONDA_PREFIX"]) # linux,macosx
     dirstosearch.append(os.path.join(os.environ["CONDA_PREFIX"],'Library')) # windows
 dirstosearch += [os.path.expanduser('~'), '/usr/local', '/sw', '/opt',
-                '/opt/local', '/usr']
+                '/opt/local', '/opt/homebrew', '/usr']
 
 # try nc-config first
 if USE_NCCONFIG and HAS_NCCONFIG:  # Try nc-config.
@@ -529,7 +567,8 @@ if 'sdist' not in sys.argv[1:] and 'clean' not in sys.argv[1:] and '--version' n
     # this determines whether renameGroup and filepath methods will work.
     has_rename_grp, has_nc_inq_path, has_nc_inq_format_extended, \
     has_cdf5_format, has_nc_open_mem, has_nc_create_mem, \
-    has_parallel4_support, has_pnetcdf_support = \
+    has_parallel4_support, has_pnetcdf_support, has_szip_support, has_quantize, \
+    has_zstandard, has_bzip2, has_blosc, has_set_alignment, has_ncfilter, has_nc_rc_set = \
     check_api(inc_dirs,netcdf_lib_version)
     # for netcdf 4.4.x CDF5 format is always enabled.
     if netcdf_lib_version is not None and\
@@ -537,11 +576,12 @@ if 'sdist' not in sys.argv[1:] and 'clean' not in sys.argv[1:] and '--version' n
         has_cdf5_format = True
 
     # disable parallel support if mpi4py not available.
-    try:
-        import mpi4py
-    except ImportError:
-        has_parallel4_support = False
-        has_pnetcdf_support = False
+    #try:
+    #    import mpi4py
+    #except ImportError:
+    #    f.write('disabling mpi parallel support because mpi4py not found\n')
+    #    has_parallel4_support = False
+    #    has_pnetcdf_support = False
 
     f = open(osp.join('include', 'constants.pyx'), 'w')
     if has_rename_grp:
@@ -601,9 +641,66 @@ if 'sdist' not in sys.argv[1:] and 'clean' not in sys.argv[1:] and '--version' n
         sys.stdout.write('netcdf lib does not have pnetcdf parallel functions\n')
         f.write('DEF HAS_PNETCDF_SUPPORT = 0\n')
 
+    if has_quantize:
+        sys.stdout.write('netcdf lib has bit-grooming/quantization functions\n')
+        f.write('DEF HAS_QUANTIZATION_SUPPORT = 1\n')
+    else:
+        sys.stdout.write('netcdf lib does not have bit-grooming/quantization functions\n')
+        f.write('DEF HAS_QUANTIZATION_SUPPORT = 0\n')
+
+    if has_zstandard:
+        sys.stdout.write('netcdf lib has zstandard compression functions\n')
+        f.write('DEF HAS_ZSTANDARD_SUPPORT = 1\n')
+    else:
+        sys.stdout.write('netcdf lib does not have zstandard compression functions\n')
+        f.write('DEF HAS_ZSTANDARD_SUPPORT = 0\n')
+
+    if has_bzip2:
+        sys.stdout.write('netcdf lib has bzip2 compression functions\n')
+        f.write('DEF HAS_BZIP2_SUPPORT = 1\n')
+    else:
+        sys.stdout.write('netcdf lib does not have bzip2 compression functions\n')
+        f.write('DEF HAS_BZIP2_SUPPORT = 0\n')
+
+    if has_blosc:
+        sys.stdout.write('netcdf lib has blosc compression functions\n')
+        f.write('DEF HAS_BLOSC_SUPPORT = 1\n')
+    else:
+        sys.stdout.write('netcdf lib does not have blosc compression functions\n')
+        f.write('DEF HAS_BLOSC_SUPPORT = 0\n')
+
+    if has_szip_support:
+        sys.stdout.write('netcdf lib has szip compression functions\n')
+        f.write('DEF HAS_SZIP_SUPPORT = 1\n')
+    else:
+        sys.stdout.write('netcdf lib does not have szip compression functions\n')
+        f.write('DEF HAS_SZIP_SUPPORT = 0\n')
+
+    if has_set_alignment:
+        sys.stdout.write('netcdf lib has nc_set_alignment function\n')
+        f.write('DEF HAS_SET_ALIGNMENT = 1\n')
+    else:
+        sys.stdout.write('netcdf lib does not have nc_set_alignment function\n')
+        f.write('DEF HAS_SET_ALIGNMENT = 0\n')
+
+    if has_ncfilter:
+        sys.stdout.write('netcdf lib has nc_inq_filter_avail function\n')
+        f.write('DEF HAS_NCFILTER = 1\n')
+    else:
+        sys.stdout.write('netcdf lib does not have nc_inq_filter_avail function\n')
+        f.write('DEF HAS_NCFILTER = 0\n')
+
+    if has_nc_rc_set:
+        sys.stdout.write('netcdf lib has nc_rc_set function\n')
+        f.write('DEF HAS_NCRCSET = 1\n')
+    else:
+        sys.stdout.write('netcdf lib does not have nc_rc_set function\n')
+        f.write('DEF HAS_NCRCSET = 0\n')
+
     f.close()
 
     if has_parallel4_support or has_pnetcdf_support:
+        import mpi4py
         inc_dirs.append(mpi4py.get_include())
         # mpi_incdir should not be needed if using nc-config
         # (should be included in nc-config --cflags)
@@ -616,33 +713,44 @@ if 'sdist' not in sys.argv[1:] and 'clean' not in sys.argv[1:] and '--version' n
                              library_dirs=lib_dirs,
                              include_dirs=inc_dirs + ['include'],
                              runtime_library_dirs=runtime_lib_dirs)]
+    # set language_level directive to 3
+    for e in ext_modules:
+        e.cython_directives = {'language_level': "3"} #
 else:
     ext_modules = None
 
-setup(name="netCDF4",
-      cmdclass=cmdclass,
-      version=extract_version(netcdf4_src_pyx),
-      long_description="netCDF version 4 has many features not found in earlier versions of the library, such as hierarchical groups, zlib compression, multiple unlimited dimensions, and new data types.  It is implemented on top of HDF5.  This module implements most of the new features, and can read and write netCDF files compatible with older versions of the library.  The API is modelled after Scientific.IO.NetCDF, and should be familiar to users of that module.\n\nThis project is hosted on a `GitHub repository <https://github.com/Unidata/netcdf4-python>`_ where you may access the most up-to-date source.",
-      author="Jeff Whitaker",
-      author_email="jeffrey.s.whitaker@noaa.gov",
-      url="http://github.com/Unidata/netcdf4-python",
-      download_url="http://python.org/pypi/netCDF4",
-      platforms=["any"],
-      license='License :: OSI Approved :: MIT License',
-      description="Provides an object-oriented python interface to the netCDF version 4 library.",
-      keywords=['numpy', 'netcdf', 'data', 'science', 'network', 'oceanography',
-                'meteorology', 'climate'],
-      classifiers=["Development Status :: 3 - Alpha",
-                   "Programming Language :: Python :: 3",
-                   "Programming Language :: Python :: 3.6",
-                   "Programming Language :: Python :: 3.7",
-                   "Programming Language :: Python :: 3.8",
-                   "Intended Audience :: Science/Research",
-                   "License :: OSI Approved :: MIT License",
-                   "Topic :: Software Development :: Libraries :: Python Modules",
-                   "Topic :: System :: Archiving :: Compression",
-                   "Operating System :: OS Independent"],
-      packages=['netCDF4'],
-      package_dir={'':'src'},
-      ext_modules=ext_modules,
-      **setuptools_extra_kwargs)
+# if NETCDF_PLUGIN_DIR set, install netcdf-c compression plugins inside package
+# (should point to location of lib__nc* files built by netcdf-c)
+copied_plugins=False
+if os.environ.get("NETCDF_PLUGIN_DIR"):
+    plugin_dir = os.environ.get("NETCDF_PLUGIN_DIR")
+    plugins = glob.glob(os.path.join(plugin_dir, "lib__nc*"))
+    if not plugins:
+        sys.stdout.write('no plugin files in NETCDF_PLUGIN_DIR, not installing..\n')
+        data_files = []
+    else:
+        data_files = plugins
+        sys.stdout.write('installing netcdf compression plugins from %s ...\n' % plugin_dir)
+        sofiles = [os.path.basename(sofilepath) for sofilepath in data_files]
+        sys.stdout.write(repr(sofiles)+'\n')
+        if 'sdist' not in sys.argv[1:] and 'clean' not in sys.argv[1:] and '--version' not in sys.argv[1:]:
+            for f in data_files:
+                shutil.copy(f, osp.join(os.getcwd(),osp.join(osp.join('src','netCDF4'),'plugins')))
+            copied_plugins=True
+else:
+    sys.stdout.write('NETCDF_PLUGIN_DIR not set, no netcdf compression plugins installed\n')
+    data_files = []
+
+# See pyproject.toml for project metadata
+setup(
+    name="netCDF4",  # need by GitHub dependency graph
+    version=extract_version(netcdf4_src_pyx),
+    ext_modules=ext_modules,
+)
+
+# remove plugin files copied from outside source tree
+if copied_plugins:
+    for f in sofiles:
+        filepath = osp.join(osp.join(osp.join('src','netCDF4'),'plugins'),f)
+        if os.path.exists(filepath):
+            os.remove(filepath)

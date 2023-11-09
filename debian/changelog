@@ -1,8 +1,75 @@
-netcdf4-python (1.5.7-1-deepin1) unstable; urgency=medium
+netcdf4-python (1.6.5-1) unstable; urgency=medium
 
-  * Rebuild
+  * New upstream release.
+  * Bump debhelper compat to 13.
+  * Don't override dh_auto_test for custom pybuild system.
+  * Use autopkgtest-pkg-pybuild testsuite.
+  * Enable Salsa CI.
+  * Remove generated files in clean target.
+    (closes: #1045931)
+  * Switch to dh-sequence-*.
+  * Add python3-packaging to build dependencies.
+  * Update lintian overrides.
 
- -- Deepin Packages Builder <packages@deepin.org>  Thu, 24 Nov 2022 07:20:11 +0800
+ -- Bas Couwenberg <sebastic@debian.org>  Wed, 25 Oct 2023 05:44:19 +0200
+
+netcdf4-python (1.6.4-1) unstable; urgency=medium
+
+  * Move from experimental to unstable.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sun, 11 Jun 2023 11:47:01 +0200
+
+netcdf4-python (1.6.4-1~exp1) experimental; urgency=medium
+
+  * New upstream release.
+  * Add python3-certifi to build dependencies.
+  * Refresh patches.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Tue, 06 Jun 2023 12:45:39 +0200
+
+netcdf4-python (1.6.3-1~exp1) experimental; urgency=medium
+
+  * New upstream release.
+  * Add Rules-Requires-Root to control file.
+  * Use patch to not set RPATH in libraries.
+  * Enable numpy3 dh helper.
+  * Bump Standards-Version to 4.6.2, no changes.
+  * Refresh patches.
+  * Update lintian overrides.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sat, 04 Mar 2023 08:15:54 +0100
+
+netcdf4-python (1.6.2-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Add pybuild-plugin-pyproject to build dependencies.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Thu, 17 Nov 2022 05:53:26 +0100
+
+netcdf4-python (1.6.1-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Set NO_PLUGINS environment variable to fix test failures.
+  * Update lintian overrides.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Fri, 16 Sep 2022 06:56:16 +0200
+
+netcdf4-python (1.6.0-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Bump Standards-Version to 4.6.1, no changes.
+  * Update lintian overrides.
+
+ -- Bas Couwenberg <sebastic@debian.org>  Sat, 25 Jun 2022 06:40:44 +0200
+
+netcdf4-python (1.5.8-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Bump Standards-Version to 4.6.0, no changes.
+  * Bump debhelper compat to 12, changes:
+    - Drop --list-missing from dh_install
+
+ -- Bas Couwenberg <sebastic@debian.org>  Wed, 19 Jan 2022 19:35:22 +0100
 
 netcdf4-python (1.5.7-1) unstable; urgency=medium
 

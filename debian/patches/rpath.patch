@@ -1,0 +1,28 @@
+Description: Don't set RPATH in libraries.
+Author: Bas Couwenberg <sebastic@debian.org>
+Forwarded: not-needed
+
+--- a/setup.py
++++ b/setup.py
+@@ -528,11 +528,6 @@ NETCDF4_DIR environment variable not set
+         lib_dirs.append(curl_libdir)
+         inc_dirs.append(curl_incdir)
+ 
+-if sys.platform == 'win32':
+-    runtime_lib_dirs = []
+-else:
+-    runtime_lib_dirs = lib_dirs
+-
+ # Do not require numpy for just querying the package
+ # Taken from the h5py setup file.
+ if any('--' + opt in sys.argv for opt in Distribution.display_option_names +
+@@ -711,8 +706,7 @@ if 'sdist' not in sys.argv[1:] and 'clea
+                              define_macros=DEFINE_MACROS,
+                              libraries=libs,
+                              library_dirs=lib_dirs,
+-                             include_dirs=inc_dirs + ['include'],
+-                             runtime_library_dirs=runtime_lib_dirs)]
++                             include_dirs=inc_dirs + ['include'])]
+     # set language_level directive to 3
+     for e in ext_modules:
+         e.cython_directives = {'language_level': "3"} #
