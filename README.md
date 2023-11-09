@@ -2,13 +2,42 @@
 [Python](http://python.org)/[numpy](http://numpy.org) interface to the netCDF [C library](https://github.com/Unidata/netcdf-c).
 
 [![Build status](https://github.com/Unidata/netcdf4-python/workflows/Build%20and%20Test/badge.svg)](https://github.com/Unidata/netcdf4-python/actions)
-[![PyPI package](https://badge.fury.io/py/netCDF4.svg)](http://python.org/pypi/netCDF4)
+[![PyPI package](https://img.shields.io/pypi/v/netCDF4.svg)](http://python.org/pypi/netCDF4)
 [![Anaconda-Server Badge](https://anaconda.org/conda-forge/netCDF4/badges/version.svg)](https://anaconda.org/conda-forge/netCDF4)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.2592291.svg)](https://doi.org/10.5281/zenodo.2592290)
 
 
 ## News
 For details on the latest updates, see the [Changelog](https://github.com/Unidata/netcdf4-python/blob/master/Changelog).
+
+10/20/2023: Version [1.6.5](https://pypi.python.org/pypi/netCDF4/1.6.5) released. 
+Fix for issue #1271 (mask ignored if bool MA assinged to uint8 var), support for python 3.12, more
+informative error messages.
+
+6/4/2023:  Version [1.6.4](https://pypi.python.org/pypi/netCDF4/1.6.4) released.  Now requires 
+[certifi](https://github.com/certifi/python-certifi) to locate SSL certificates - this allows 
+OpenDAP https URLs to work with linux wheels (issue [#1246](https://github.com/Unidata/netcdf4-python/issues/1246)).
+
+3/3/2023:  Version [1.6.3](https://pypi.python.org/pypi/netCDF4/1.6.3) released.
+
+11/15/2022:  Version [1.6.2](https://pypi.python.org/pypi/netCDF4/1.6.2) released. Fix for
+compilation with netcdf-c < 4.9.0 (issue [#1209](https://github.com/Unidata/netcdf4-python/issues/1209)).  
+Slicing multi-dimensional variables with an all False boolean index array
+now returns an empty numpy array (instead of raising an exception - issue [#1197](https://github.com/Unidata/netcdf4-python/issues/1197)).
+
+09/18/2022:  Version [1.6.1](https://pypi.python.org/pypi/netCDF4/1.6.1) released.  GIL now
+released for all C lib calls, `set_alignment` and `get_alignment` module functions
+added to modify/retrieve HDF5 data alignment properties. Added `Dataset` methods to 
+query availability of optional compression filters.
+
+06/24/2022:  Version [1.6.0](https://pypi.python.org/pypi/netCDF4/1.6.0) released.  Support
+for quantization (bit-grooming and bit-rounding) functionality in netcdf-c 4.9.0 which can
+dramatically improve compression.  Dataset.createVariable now accepts dimension instances (instead
+of just dimension names). 'compression' kwarg added to Dataset.createVariable to support szip as
+well as new compression algorithms available in netcdf-c 4.9.0 through compression plugins (such
+as zstd, bzip2 and blosc). Working arm64 wheels for Apple M1 Silicon now available on pypi.
+
+10/31/2021:  Version [1.5.8](https://pypi.python.org/pypi/netCDF4/1.5.8) released. Fix Enum bug, add binary wheels for aarch64 and python 3.10.
 
 6/22/2021:  Version [1.5.7](https://pypi.python.org/pypi/netCDF4/1.5.7) released.
 Fixed OverflowError on Windows when reading data with dimension sizes greater than 2**32-1.
@@ -58,7 +87,7 @@ Fixes bug in implementation of NETCDF4_CLASSIC parallel IO support in 1.4.3.
 10/26/2018: Version [1.4.2](https://pypi.python.org/pypi/netCDF4/1.4.2) released. Minor bugfixes, added `Variable.get_dims()` method and `master_file` kwarg for `MFDataset.__init__`.
 
 08/10/2018: Version [1.4.1](https://pypi.python.org/pypi/netCDF4/1.4.1) released. The old slicing behavior
-(numpy array returned unless missing values are present, otherwise masked array returned) is renabled
+(numpy array returned unless missing values are present, otherwise masked array returned) is re-enabled
 via `set_always_mask(False)`.
 
 05/11/2018: Version [1.4.0](https://pypi.python.org/pypi/netCDF4/1.4.0) released. The netcdftime package is no longer
@@ -228,7 +257,7 @@ conda install -c conda-forge netCDF4
 * Clone GitHub repository (`git clone https://github.com/Unidata/netcdf4-python.git`)
 
 * Make sure [numpy](http://www.numpy.org/) and [Cython](http://cython.org/) are
-  installed and you have [Python](https://www.python.org) 3.6 or newer.
+  installed and you have [Python](https://www.python.org) 3.7 or newer.
 
 * Make sure [HDF5](http://www.h5py.org/) and netcdf-4 are installed, 
   and the `nc-config` utility is in your Unix PATH.

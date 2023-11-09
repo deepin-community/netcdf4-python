@@ -1,5 +1,3 @@
-from __future__ import print_function
-
 import sys
 import numpy as np
 from numpy import ma
@@ -45,7 +43,10 @@ def _find_dim(grp, dimname):
                 group = group.parent
             except:
                 raise ValueError("cannot find dimension %s in this group or parent groups" % dimname)
-    return dim
+    if dim is None:
+        raise KeyError("dimension %s not defined in group %s or any group in it's family tree" % (dimname, grp.path))
+    else:
+        return dim
 
 def _walk_grps(topgrp):
     """Iterate through all (sub-) groups of topgrp, similar to os.walktree.
@@ -78,7 +79,7 @@ least_significant_digit=1, bits will be 4.
         return datout
 
 def _StartCountStride(elem, shape, dimensions=None, grp=None, datashape=None,\
-        put=False, use_get_vars = False):
+        put=False, use_get_vars = True):
     """Return start, count, stride and indices needed to store/extract data
     into/from a netCDF variable.
 
@@ -235,7 +236,7 @@ def _StartCountStride(elem, shape, dimensions=None, grp=None, datashape=None,\
             unlim = False
         # convert boolean index to integer array.
         if np.iterable(ea) and ea.dtype.kind =='b':
-            # check that boolen array not too long
+            # check that boolean array not too long
             if not unlim and shape[i] != len(ea):
                 msg="""
 Boolean array must have the same shape as the data along this dimension."""
@@ -454,7 +455,7 @@ def _out_array_shape(count):
     out = []
 
     for i, n in enumerate(s):
-        if n == 1:
+        if n == 1 and count.size > 0:
             c = count[..., i].ravel()[0] # All elements should be identical.
             out.append(c)
         else:
@@ -539,7 +540,7 @@ def ncinfo():
             sys.stderr.write(usage)
             sys.exit(0)
 
-    # filename passed as last argumenbt
+    # filename passed as last argument
     try:
         filename = pargs[-1]
     except IndexError:
@@ -575,7 +576,7 @@ def _nc4tonc3(filename4,filename3,clobber=False,nchunk=10,quiet=False,format='NE
 
     ncfile4 = Dataset(filename4,'r')
     if ncfile4.file_format != 'NETCDF4_CLASSIC':
-        raise IOError('input file must be in NETCDF4_CLASSIC format')
+        raise OSError('input file must be in NETCDF4_CLASSIC format')
     ncfile3 = Dataset(filename3,'w',clobber=clobber,format=format)
     # create dimensions. Check for unlimited dim.
     unlimdimname = False

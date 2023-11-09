@@ -1,0 +1,3 @@
+include/constants.pyx
+src/*-info/
+src/*/*.c

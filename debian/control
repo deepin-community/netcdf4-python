@@ -3,21 +3,27 @@ Maintainer: Debian GIS Project <pkg-grass-devel@lists.alioth.debian.org>
 Uploaders: Bas Couwenberg <sebastic@debian.org>
 Section: science
 Priority: optional
-Build-Depends: debhelper (>= 10~),
+Build-Depends: debhelper-compat (= 13),
                dh-python,
+               dh-sequence-numpy3,
+               dh-sequence-python3,
+               pybuild-plugin-pyproject,
                python3-all-dev,
+               python3-certifi,
                python3-cftime,
+               python3-packaging,
                python3-setuptools,
                python3-numpy,
                cython3,
                libhdf5-dev,
                libnetcdf-dev (>= 1:4.4.0),
-               netcdf-bin,
-               chrpath
-Standards-Version: 4.5.1
+               netcdf-bin
+Standards-Version: 4.6.2
 Vcs-Browser: https://salsa.debian.org/debian-gis-team/netcdf4-python/
 Vcs-Git: https://salsa.debian.org/debian-gis-team/netcdf4-python.git
 Homepage: http://unidata.github.io/netcdf4-python/
+Rules-Requires-Root: no
+Testsuite: autopkgtest-pkg-pybuild
 
 Package: python3-netcdf4
 Architecture: any
