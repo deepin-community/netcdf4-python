@@ -1,3 +1,9 @@
+netcdf4-python (1.6.5-1deepin1) unstable; urgency=medium
+
+  * No source change upload against python 3.12.
+
+ -- Tianyu Chen <sweetyfish@deepin.org>  Mon, 08 Jul 2024 09:52:45 +0200
+
 netcdf4-python (1.6.5-1) unstable; urgency=medium
 
   * New upstream release.
