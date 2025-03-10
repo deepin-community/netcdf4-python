@@ -1,3 +1,4 @@
 include/constants.pyx
+include/parallel_support_imports.pxi
 src/*-info/
 src/*/*.c

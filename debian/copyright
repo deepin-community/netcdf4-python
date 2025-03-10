@@ -7,6 +7,10 @@ Files: *
 Copyright: 2008, Jeffrey Whitaker
 License: Expat
 
+Files: external/nc_complex/*
+Copyright: 2023, Peter Hill
+License: Expat
+
 Files: debian/*
 Copyright: 2015, Ross Gammon <rossgammon@mail.dk>
 License: ISC
