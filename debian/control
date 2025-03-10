@@ -18,7 +18,7 @@ Build-Depends: debhelper-compat (= 13),
                libhdf5-dev,
                libnetcdf-dev (>= 1:4.4.0),
                netcdf-bin
-Standards-Version: 4.6.2
+Standards-Version: 4.7.0
 Vcs-Browser: https://salsa.debian.org/debian-gis-team/netcdf4-python/
 Vcs-Git: https://salsa.debian.org/debian-gis-team/netcdf4-python.git
 Homepage: http://unidata.github.io/netcdf4-python/
